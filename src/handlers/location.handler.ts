@@ -2,6 +2,7 @@ import { Telegraf } from "telegraf";
 import { BotContext } from "../types/context";
 import { COMMANDS } from "../constants/commands";
 import { createLocationKeyboard, mainMenuKeyboard } from "../keyboards";
+import { Location } from "@/types";
 
 export function registerLocationHandler(bot: Telegraf<BotContext>) {
   // Обработка команды "Исследовать"
@@ -13,24 +14,15 @@ export function registerLocationHandler(bot: Telegraf<BotContext>) {
     if (!player) return;
 
     const location = await locationRepository.getLocation(player.location);
+    if (!location) return;
+
     const connectedLocations = await locationRepository.getConnectedLocations(
       player.location
     );
 
-    const message =
-      `🗺 Куда вы хотите пойти?\n\n` +
-      `Текущая локация: ${location?.name}\n` +
-      `Доступные пути:\n` +
-      connectedLocations
-        .map(
-          (loc) =>
-            `${loc.isSafe ? "🏰" : "⚠️"} ${loc.name} - ${loc.description}`
-        )
-        .join("\n");
-
     await ctx.reply(
-      message,
-      createLocationKeyboard(location!, connectedLocations)
+      formatLocationDescription(location, connectedLocations),
+      createLocationKeyboard(location, connectedLocations)
     );
   });
 
@@ -59,67 +51,67 @@ export function registerLocationHandler(bot: Telegraf<BotContext>) {
     );
   });
 
-  // Обработка команды "Вернуться в город"
-  bot.hears(COMMANDS.RETURN_TO_TOWN, async (ctx) => {
-    const { id: telegramId } = ctx.from;
-    const { playerRepository, locationRepository } = ctx.gameContext;
-
-    const player = await playerRepository.getPlayer(telegramId);
-    if (!player) return;
-
-    await playerRepository.updatePlayer(telegramId, { location: "0-0" });
-    const townLocation = await locationRepository.getLocation("0-0");
-
-    await ctx.reply(
-      `🏰 Вы вернулись в город.\n\n` + `${townLocation?.description}`,
-      mainMenuKeyboard
-    );
-  });
-
-  // Обработка перехода в локацию
-  bot.hears(/^[🏰⚠️] (.+)$/, async (ctx) => {
-    console.log("Movement handler triggered");
-    console.log("Full message:", ctx.message.text);
-    console.log("Match:", ctx.match);
-
-    const locationName = ctx.match[1];
-    const { id: telegramId } = ctx.from;
-    const { playerRepository, locationRepository } = ctx.gameContext;
-
-    console.log("Trying to move to:", locationName);
-
-    const player = await playerRepository.getPlayer(telegramId);
-    if (!player) return;
-
-    console.log("Current player location:", player.location);
-
-    const connectedLocations = await locationRepository.getConnectedLocations(
-      player.location
-    );
-    console.log("Connected locations:", connectedLocations);
-
-    const targetLocation = connectedLocations.find(
-      (loc) => loc.name === locationName
-    );
-    console.log("targetLocation:", targetLocation);
-
-    if (!targetLocation) {
-      return ctx.reply("Вы не можете туда попасть.");
+  // Обработка перемещений через callback
+  bot.action(new RegExp(`^${COMMANDS.MOVE_TO}(.+)$`), async (ctx) => {
+    if (!ctx.callbackQuery.message) {
+      return;
     }
 
-    await playerRepository.updatePlayer(telegramId, {
-      location: targetLocation.id,
-    });
+    const targetLocationId = ctx.match[1];
+    const { id: telegramId } = ctx.from;
+    const { playerRepository, locationRepository } = ctx.gameContext;
 
-    const locationInfo =
-      `🚶‍♂️ Вы перешли в локацию: ${targetLocation.name}\n\n` +
-      `📝 ${targetLocation.description}`;
+    const player = await playerRepository.getPlayer(telegramId);
+    if (!player) return;
 
-    const newConnectedLocations =
-      await locationRepository.getConnectedLocations(targetLocation.id);
-    await ctx.reply(
-      locationInfo,
-      createLocationKeyboard(targetLocation, newConnectedLocations)
+    // Проверяем возможность перемещения
+    const currentLocation = await locationRepository.getLocation(
+      player.location
     );
+    if (!currentLocation) return;
+
+    // Валидация: можно ли перейти в целевую локацию
+    if (!currentLocation.connectedLocations.includes(targetLocationId)) {
+      await ctx.answerCbQuery("Вы не можете туда попасть!");
+      return;
+    }
+
+    // Перемещение
+    await playerRepository.updatePlayer(telegramId, {
+      location: targetLocationId,
+    });
+    const newLocation = await locationRepository.getLocation(targetLocationId);
+    const newConnectedLocations =
+      await locationRepository.getConnectedLocations(targetLocationId);
+
+    // Обновляем сообщение с новой информацией о локации
+    await ctx.editMessageText(
+      formatLocationDescription(newLocation!, newConnectedLocations),
+      {
+        reply_markup: createLocationKeyboard(
+          newLocation!,
+          newConnectedLocations
+        ).reply_markup,
+        parse_mode: "HTML",
+      }
+    );
+
+    await ctx.answerCbQuery(`Вы перешли в ${newLocation!.name}`);
   });
+}
+
+function formatLocationDescription(
+  location: Location,
+  connectedLocations: Location[]
+): string {
+  return `
+📍 Локация: ${location.name}
+
+${location.description}
+
+🚪 Доступные пути:
+${connectedLocations
+  .map((loc) => `${loc.isSafe ? "🏰" : "⚠️"} ${loc.name}`)
+  .join("\n")}
+`;
 }

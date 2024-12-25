@@ -27,30 +27,16 @@ export function createLocationKeyboard(
   currentLocation: Location,
   connectedLocations: Location[]
 ) {
-  const navigationButtons = connectedLocations.map((loc) => {
-    // Добавляем эмодзи в зависимости от типа локации
-    const emoji = loc.isSafe ? "🏰" : "⚠️";
-    return [`${emoji} ${loc.name}`];
-  });
+  const buttons = connectedLocations.map((loc) => ({
+    text: `${loc.isSafe ? "🏰" : "⚠️"} ${loc.name}`,
+    callback_data: `${COMMANDS.MOVE_TO}${loc.id}`, // move_to:1-2
+  }));
 
-  const actionButtons = [];
-
-  // Добавляем кнопки действий в зависимости от свойств локации
-  if (currentLocation.properties?.hasShop) {
-    actionButtons.push("🏪 Магазин");
-  }
-
-  if (currentLocation.properties?.hasHealer) {
-    actionButtons.push("❤️ Лекарь");
-  }
-
-  if (!currentLocation.isSafe) {
-    actionButtons.push("👀 Осмотреться");
-  }
-
-  return Markup.keyboard([
-    ...navigationButtons,
-    actionButtons,
-    ["📍 Где я?"],
-  ]).resize();
+  return {
+    reply_markup: {
+      inline_keyboard: buttons.map((btn) => [
+        { text: btn.text, callback_data: btn.callback_data },
+      ]),
+    },
+  };
 }

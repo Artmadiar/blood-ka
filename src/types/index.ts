@@ -4,13 +4,16 @@ export interface Location {
   description: string;
   isSafe: boolean;
   connectedLocations: string[]; // массив id доступных соседних локаций
-  properties?: {
-    hasShop?: boolean;
-    hasHealer?: boolean;
-    monsterLevel?: number;
-    // другие свойства локации
-    [key: string]: any;
-  };
+  properties?: LocationProperties;
+}
+
+export interface LocationProperties {
+  hasShop?: boolean;
+  hasHealer?: boolean;
+  monsterLevel?: number;
+  monsterChance?: number;
+  hasBoss?: boolean;
+  [key: string]: any;
 }
 
 export interface Player {
