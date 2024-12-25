@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Artmadiar/blook-ka.git"
+    "url": "git+https://github.com/Artmadiar/blood-ka.git"
   },
   "keywords": [
     "telegram-bot",
@@ -25,9 +25,9 @@
   "author": "artmadiar@gmail.com",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Artmadiar/blook-ka/issues"
+    "url": "https://github.com/Artmadiar/blood-ka/issues"
   },
-  "homepage": "https://github.com/Artmadiar/blook-ka#readme",
+  "homepage": "https://github.com/Artmadiar/blood-ka#readme",
   "dependencies": {
     "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",

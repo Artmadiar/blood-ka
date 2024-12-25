@@ -15,7 +15,7 @@ export class PlayerRepository {
       })
       .returning("*");
 
-    return this.mapToPlayer(newPlayer);
+    return newPlayer;
   }
 
   async getPlayer(telegramId: number): Promise<Player | null> {
@@ -23,7 +23,7 @@ export class PlayerRepository {
       .where({ telegram_id: telegramId })
       .first();
 
-    return player ? this.mapToPlayer(player) : null;
+    return player || null;
   }
 
   async updatePlayer(
@@ -36,21 +36,5 @@ export class PlayerRepository {
         ...updates,
         updated_at: new Date(),
       });
-  }
-
-  private mapToPlayer(data: any): Player {
-    return {
-      telegramId: data.telegram_id,
-      name: data.name,
-      level: data.level,
-      hp: data.hp,
-      maxHp: data.max_hp,
-      attack: data.attack,
-      exp: data.exp,
-      gold: data.gold,
-      location: data.location,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
   }
 }

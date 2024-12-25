@@ -7,7 +7,7 @@ export class LocationRepository {
   async getLocation(id: string): Promise<Location | null> {
     const location = await this.knex("locations").where({ id }).first();
 
-    return location ? this.mapToLocation(location) : null;
+    return location || null;
   }
 
   async getConnectedLocations(locationId: string): Promise<Location[]> {
@@ -21,17 +21,6 @@ export class LocationRepository {
       location.connectedLocations
     );
 
-    return locations.map(this.mapToLocation);
-  }
-
-  private mapToLocation(data: any): Location {
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      isSafe: data.is_safe,
-      connectedLocations: data.connected_locations,
-      properties: data.properties,
-    };
+    return locations;
   }
 }
