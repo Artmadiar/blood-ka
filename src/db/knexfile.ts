@@ -1,3 +1,4 @@
+import knexStringcase from "knex-stringcase";
 import { config } from "../config";
 import { Knex } from "knex";
 
@@ -12,6 +13,7 @@ const knexConfig: Knex.Config = {
     min: 2,
     max: 10,
   },
+  ...knexStringcase(),
 };
 
 export default knexConfig;
